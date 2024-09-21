@@ -1,3 +1,192 @@
+from decimal import Decimal, getcontext
+
+# 精度を200桁に設定
+getcontext().prec = 200000
+
+# 高精度の計算を実施
+a = Decimal('1.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890')
+b = Decimal('2.9876543210987654321098765432109876543210987654321098765432109876543210987654321098765432109876543210')
+
+result = a * b
+print(result)
+
+import decimal
+from decimal import Decimal
+
+# 計算精度の設定（例えば200桁）
+decimal.getcontext().prec = 200000
+
+# πの計算
+def calculate_pi():
+    """ 円周率πをBailey–Borwein–Plouffe (BBP) フォーミュラを使って計算 """
+    pi = Decimal(0)
+    k = 0
+    while k < 200:
+        pi += (Decimal(1) / (16**k)) * (
+            Decimal(4) / (8*k + 1) - 
+            Decimal(2) / (8*k + 4) - 
+            Decimal(1) / (8*k + 5) - 
+            Decimal(1) / (8*k + 6))
+        k += 1
+    return pi
+
+# πを表示
+pi_value = calculate_pi()
+print(pi_value)
+
+def process_large_data(data):
+    # データの処理（例としてビットの反転）
+    processed_data = ~data
+    return processed_data
+
+def system_processing(data_stream):
+    processed_stream = []
+    for data in data_stream:
+        processed_data = process_large_data(data)
+        processed_stream.append(processed_data)
+    return processed_stream
+
+# 4096ビットのデータストリームを生成
+data_stream = [int('0b' + '1' * 4096, 2) for _ in range(0)]  # 100個の4096ビットデータ
+
+# システム内のデータストリーミング処理
+processed_data_stream = system_processing(data_stream)
+
+import multiprocessing
+import time
+
+def process_task(task, core_id):
+    """
+    各タスクをコアに割り当てて処理する関数。
+    """
+    print(f"Core {core_id} processing task: {task}")
+    time.sleep(task)  # シミュレーションのための待機時間
+    print(f"Core {core_id} completed task: {task}")
+
+def main():
+    # タスクのリスト
+    tasks = [1, 2, 3, 4, 5, 6, 7, 8]
+    
+    # コアの数
+    num_cores = multiprocessing.cpu_count()
+    print(f"Number of CPU cores available: {num_cores}")
+    
+    # プールを使ってタスクを並列処理
+    with multiprocessing.Pool(processes=num_cores) as pool:
+        for i, task in enumerate(tasks):
+            core_id = i % num_cores
+            pool.apply_async(process_task, args=(task, core_id))
+        
+        pool.close()
+        pool.join()
+    
+class PPE:
+    def __init__(self):
+        self.registers = [0] * 32  # 32 general purpose registers
+        self.pc = 0                 # program counter
+        self.memory = [0] * 1024    # example memory space
+    
+    def fetch_instruction(self):
+        instruction = self.memory[self.pc]
+        self.pc += 1
+        return instruction
+    
+    def execute_instruction(self, instruction):
+        opcode = (instruction >> 26) & 0x3F
+        if opcode == 0b000000:  # example opcode for add
+            rs = (instruction >> 21) & 0x1F
+            rt = (instruction >> 16) & 0x1F
+            rd = (instruction >> 11) & 0x1F
+            self.registers[rd] = self.registers[rs] + self.registers[rt]
+        # implement other opcodes as needed
+    
+class SPE:
+    def __init__(self):
+        self.registers = [0] * 128  # 128 registers for SIMD operations
+        self.local_store = [0] * 1024  # local store memory for SPE
+
+# Example usage
+ppe = PPE()
+instruction = ppe.fetch_instruction()
+ppe.execute_instruction(instruction)
+    
+import numpy as np
+
+def phase_to_binary_vector(angles, bins=256):
+    """
+    位相角のリストをバイナリー値のリストに変換する関数
+    
+    :param angles: 位相角のリスト (ラジアン)
+    :param bins: 分割するビンの数
+    :return: バイナリー値のリスト
+    """
+    binary_values = [format(int((angle % (2 * np.pi)) / (2 * np.pi) * bins), f'0{int(np.log2(bins))}b') for angle in angles]
+    return binary_values
+
+# サンプルの位相角のリスト
+angles = [np.pi / 4, np.pi / 2, np.pi]
+binary_values = phase_to_binary_vector(angles)
+print(binary_values)  # 出力例: ['00000011', '00000100', '00001000']
+
+import re
+import io
+
+class DataCompressor:
+    def __init__(self):
+        self.compressed_data = []
+        self.position_info = []
+
+    def compress(self, binary_data):
+        count_0 = 0
+        count_1 = 0
+        current_bit = None
+
+        for bit in binary_data:
+            if bit == '0':
+                if current_bit == '0':
+                    count_0 += 1
+                else:
+                    if current_bit is not None:
+                        self.compressed_data.append((current_bit, count_0, count_1))
+                    current_bit = '0'
+                    count_0 = 1
+                    count_1 = 0
+            elif bit == '1':
+                if current_bit == '1':
+                    count_1 += 1
+                else:
+                    if current_bit is not None:
+                        self.compressed_data.append((current_bit, count_0, count_1))
+                    current_bit = '1'
+                    count_1 = 1
+                    count_0 = 0
+        
+        # Add the last recorded bit
+        if current_bit is not None:
+            self.compressed_data.append((current_bit, count_0, count_1))
+
+        self.record_position_info()
+
+    def record_position_info(self):
+        for index, (bit, count_0, count_1) in enumerate(self.compressed_data):
+            self.position_info.append((bit, index))
+
+    def decompress(self):
+        original_data = ''
+        for bit, count_0, count_1 in self.compressed_data:
+            original_data += bit * (count_0 + count_1)
+        return original_data
+
+    def save_to_file(self, filename):
+        with open(filename, 'w') as file:
+            for entry in self.compressed_data:
+                file.write(f"{entry}\n")
+
+# 使用例
+compressor = DataCompressor()
+compressor.compress("0011001110")
+print(compressor.compressed_data)
+
 import threading
 import time
 import os
@@ -166,130 +355,11 @@ def correct_errors(extended_data, error_row, error_col):
     
     return extended_data
     
-def process_large_data(data):
-    # データの処理（例としてビットの反転）
-    processed_data = ~data
-    return processed_data
-
-def system_processing(data_stream):
-    processed_stream = []
-    for data in data_stream:
-        processed_data = process_large_data(data)
-        processed_stream.append(processed_data)
-    return processed_stream
-
-# 4096ビットのデータストリームを生成
-data_stream = [int('0b' + '1' * 4096, 2) for _ in range(0)]  # 100個の4096ビットデータ
-
-# システム内のデータストリーミング処理
-processed_data_stream = system_processing(data_stream)
-
-import multiprocessing
-import time
-
-def process_task(task, core_id):
-    """
-    各タスクをコアに割り当てて処理する関数。
-    """
-    print(f"Core {core_id} processing task: {task}")
-    time.sleep(task)  # シミュレーションのための待機時間
-    print(f"Core {core_id} completed task: {task}")
-
-def main():
-    # タスクのリスト
-    tasks = [1, 2, 3, 4, 5, 6, 7, 8]
-    
-    # コアの数
-    num_cores = multiprocessing.cpu_count()
-    print(f"Number of CPU cores available: {num_cores}")
-    
-    # プールを使ってタスクを並列処理
-    with multiprocessing.Pool(processes=num_cores) as pool:
-        for i, task in enumerate(tasks):
-            core_id = i % num_cores
-            pool.apply_async(process_task, args=(task, core_id))
-        
-        pool.close()
-        pool.join()
-
-import numpy as np
-
-def binary_to_cosine(b):
-    if b == 0:
-        return 1.0  # cos(0) = 1
-    elif b == 1:
-        return np.cos(np.pi)  # cos(pi) = -1
-    else:
-        raise ValueError("Input must be 0 or 1")
-
-def linear_data_processing(linear_data):
-    processed_data = []
-    for value in linear_data:
-        # 例えば閾値処理を行う場合
-        if value >= 0.5:
-            binary_value = 1
-        else:
-            binary_value = 0
-        
-        # バイナリー値を実数値に変換する関数を呼び出し
-        cos_value = binary_to_cosine(binary_value)
-        
-        # 実数値を使った処理を行う例
-        result = cos_value * 1  # 仮の処理例：cos_value を1倍するなど
-        
-        processed_data.append(result)
-    
-    return processed_data
-
-def main():
-    # リニアデータの例として、numpy配列を生成
-    linear_data = np.linspace(0, 1, 0)  # 0から1までの∞個の要素を持つ配列
-    
-    # データの処理
-    processed_output = linear_data_processing(linear_data)
-    
-    # 結果の出力（例として、コンソールに表示）
-    print("Processed Output:", processed_output)
-
-    # 結果をファイルに保存する例
-    np.savetxt("processed_output.txt", processed_output)
-    
-# メイン処理の実行
-if __name__ == "__main__":
-    main()
-    
-class PPE:
-    def __init__(self):
-        self.registers = [0] * 32  # 32 general purpose registers
-        self.pc = 0                 # program counter
-        self.memory = [0] * 1024    # example memory space
-    
-    def fetch_instruction(self):
-        instruction = self.memory[self.pc]
-        self.pc += 1
-        return instruction
-    
-    def execute_instruction(self, instruction):
-        opcode = (instruction >> 26) & 0x3F
-        if opcode == 0b000000:  # example opcode for add
-            rs = (instruction >> 21) & 0x1F
-            rt = (instruction >> 16) & 0x1F
-            rd = (instruction >> 11) & 0x1F
-            self.registers[rd] = self.registers[rs] + self.registers[rt]
-        # implement other opcodes as needed
-    
-class SPE:
-    def __init__(self):
-        self.registers = [0] * 128  # 128 registers for SIMD operations
-        self.local_store = [0] * 1024  # local store memory for SPE
-
-# Example usage
-ppe = PPE()
-instruction = ppe.fetch_instruction()
-ppe.execute_instruction(instruction)
-    
 import numpy as np
 import matplotlib.pyplot as plt
+
+# キャッシュ用のリストを準備
+rgb_cache = []
 
 def rgb_to_unit_circle(R, G, B):
     """
@@ -305,7 +375,7 @@ def rgb_to_unit_circle(R, G, B):
 
 def plot_unit_circle_with_rgb(sample_density=100):
     """
-    単位円を用いてRGBグラデーションをプロット
+    単位円を用いてRGBグラデーションをプロットし、RGB値をキャッシュに保存
     """
     r_values = np.linspace(0, 1, sample_density)
     g_values = np.linspace(0, 1, sample_density)
@@ -324,6 +394,12 @@ def plot_unit_circle_with_rgb(sample_density=100):
                 y_coords.append(y)
                 z_coords.append(z)
                 colors.append((R, G, B))
+                
+                # RGB値とその座標をキャッシュに保存
+                rgb_cache.append({
+                    'R': R, 'G': G, 'B': B, 
+                    'x': x, 'y': y, 'z': z
+                })
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
@@ -341,6 +417,14 @@ def plot_unit_circle_with_rgb(sample_density=100):
 # メインの実行
 plot_unit_circle_with_rgb()
 
+def get_rgb_from_cache(r, g, b):
+    """
+    システムから指定されたRGB値をキャッシュから返す関数
+    """
+    # キャッシュ内に同じRGB値があるか確認
+    if (r, g, b) in rgb_cache:
+        return (r, g, b)  # キャッシュから同じRGB値を返す
+         
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -380,204 +464,7 @@ if __name__ == "__main__":
     
     # 動画を処理
     process_video(video_path, block_size)
-    
-import numpy as np
-import cv2
-import librosa
 
-def process_data(sample_data, data_type):
-    if data_type == 'image':
-        return process_image(sample_data)
-    elif data_type == 'video':
-        return process_video(sample_data)
-    elif data_type == 'audio':
-        return process_audio(sample_data)
-    else:
-        raise ValueError("Unsupported data type: Choose 'image', 'video', or 'audio'.")
-
-def process_image(image):
-    # グレースケールに変換
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
-    # Sobelフィルタでグラデーションを計算
-    grad_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-    grad_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
-    
-    # ベクトルの大きさと方向を計算
-    magnitude = np.sqrt(grad_x**2 + grad_y**2)
-    angle = np.arctan2(grad_y, grad_x)
-    
-    # 平滑化処理
-    smoothed_image = smooth_using_vectors(gray, magnitude, angle)
-    
-    return smoothed_image
-
-def process_video(video_frames):
-    smoothed_frames = []
-    for frame in video_frames:
-        smoothed_frame = process_image(frame)
-        smoothed_frames.append(smoothed_frame)
-    return smoothed_frames
-
-def process_audio(audio_data, sr=44100):
-    # オーディオデータを2次元の「画像」に変換（短時間フーリエ変換（STFT）など）
-    spectrogram = librosa.stft(audio_data)
-    magnitude, phase = librosa.magphase(spectrogram)
-    
-    # グラデーション計算（簡易的な例）
-    grad_x = np.diff(magnitude, axis=1)
-    grad_y = np.diff(magnitude, axis=0)
-    
-    # ベクトルの大きさと方向を計算
-    angle = np.arctan2(grad_y, grad_x)
-    
-    # 平滑化処理
-    smoothed_magnitude = smooth_using_vectors(magnitude, np.abs(grad_x) + np.abs(grad_y), angle)
-    
-    # 再合成して音声に戻す
-    smoothed_spectrogram = smoothed_magnitude * np.exp(1j * np.angle(phase))
-    smoothed_audio = librosa.istft(smoothed_spectrogram)
-    
-    return smoothed_audio
-
-def smooth_using_vectors(data, magnitude, angle):
-    height, width = data.shape
-    smoothed_data = np.zeros_like(data)
-    
-    for y in range(height):
-        for x in range(width):
-            direction = angle[y, x]
-            offset_x = int(np.round(np.cos(direction)))
-            offset_y = int(np.round(np.sin(direction)))
-            
-            new_x = min(max(x + offset_x, 0), width - 1)
-            new_y = min(max(y + offset_y, 0), height - 1)
-            
-            smoothed_data[y, x] = (data[y, x] + data[new_y, new_x]) // 2
-    
-    return smoothed_data
-
-# 使用例
-# 画像の場合
-image = cv2.imread('sample_image.png')
-smoothed_image = process_data(image, 'image')
-
-# 映像の場合（各フレームをリストとして渡す）
-video_frames = [cv2.imread(f'frame_{i}.png') for i in range(frame_count)]
-smoothed_video = process_data(video_frames, 'video')
-
-# 音声の場合
-audio_data, sr = librosa.load('sample_audio.wav')
-smoothed_audio = process_data(audio_data, 'audio')
-
-def interpolate_frames(frame1, frame2, num_interpolations):
-    """Interpolate between two frames to create additional frames."""
-    interpolated_frames = []
-    for i in range(1, num_interpolations + 1):
-        alpha = i / (num_interpolations + 1)
-        interpolated_frame = cv2.addWeighted(frame1, 1 - alpha, frame2, alpha, 0)
-        interpolated_frames.append(interpolated_frame)
-    return interpolated_frames
-
-def process_video_with_oversampling(video_path, oversampling_factor):
-    # 動画を読み込む
-    cap = cv2.VideoCapture(video_path)
-    
-    frame_centroids = []
-    
-    ret, prev_frame = cap.read()
-    frame_number = 0
-    
-    while True:
-        ret, next_frame = cap.read()
-        if not ret:
-            break
-        
-        # フレーム間の補間フレームを作成
-        interpolated_frames = interpolate_frames(prev_frame, next_frame, oversampling_factor)
-        
-        # 元のフレームを含め、すべてのフレームを処理
-        frames_to_process = [prev_frame] + interpolated_frames
-        
-        for frame in frames_to_process:
-            # フレームをRGBチャンネルに分割
-            b, g, r = cv2.split(frame)
-            
-            # 各チャンネルの重心を計算
-            r_centroid = calculate_centroid(r)
-            g_centroid = calculate_centroid(g)
-            b_centroid = calculate_centroid(b)
-            
-            # フレーム番号を記録
-            frame_number += 1
-            
-            # 重心を記録
-            frame_centroids.append({
-                'frame': frame_number,
-                'r_centroid_x': r_centroid[0], 'r_centroid_y': r_centroid[1],
-                'g_centroid_x': g_centroid[0], 'g_centroid_y': g_centroid[1],
-                'b_centroid_x': b_centroid[0], 'b_centroid_y': b_centroid[1]
-            })
-        
-        prev_frame = next_frame
-    
-    cap.release()
-    
-    # データをデータフレームに変換
-    df = pd.DataFrame(frame_centroids)
-    # CSVファイルとして保存
-    df.to_csv("rgb_centroids_oversampled.csv", index=False)
-    print("オーバーサンプリングしたRGB各チャンネルの重心を記録しました。")
-
-# 使用例
-process_video_with_oversampling("input_video.mp4", oversampling_factor=2)
-
-import numpy as np
-import time
-
-def calculate_inverse_phase(frequency, amplitude):
-    """
-    与えられた周波数と振幅に基づいて逆位相の振動数を計算します。
-    """
-    inverse_phase = np.sin(2 * np.pi * frequency + np.pi) * amplitude
-    return inverse_phase
-
-def apply_cooling(current_temperature, target_temperature, current_frequency):
-    """
-    逆位相の計算を行い、冷却効果を適用します。
-    """
-    inverse_phase_effect = calculate_inverse_phase(current_frequency, current_temperature)
-    new_temperature = current_temperature - inverse_phase_effect
-    return new_temperature
-
-def monitor_and_cool(initial_temperature, target_temperature, initial_frequency, idle_time):
-    """
-    システムのアイドル時間を検出し、冷却効果を適用します。
-    """
-    current_temperature = initial_temperature
-    current_frequency = initial_frequency
-
-    while current_temperature > target_temperature:
-        # アイソレートされたアイドル時間を待機
-        time.sleep(idle_time)
-
-        # 冷却効果を適用
-        current_temperature = apply_cooling(current_temperature, target_temperature, current_frequency)
-
-        # ここに温度のログやモニタリングコードを追加することができます
-        print(f"現在の温度: {current_temperature:.2f} °C")
-
-    return current_temperature
-
-# 初期温度、目標温度、初期周波数、アイドル時間の設定
-initial_temp = 60  # 初期温度（摂氏）
-target_temp = 30   # 目標温度（摂氏）
-initial_freq = 2.0  # 初期周波数（GHz）
-idle_time = 1  # アイソレートされたアイドル時間（秒）
-
-# システムの監視と冷却プロセスの実行
-final_temp = monitor_and_cool(initial_temp, target_temp, initial_freq, idle_time)
-print(f"最終的な温度: {final_temp:.2f} °C")
 import time
 import random
 import threading
@@ -620,6 +507,76 @@ cpu = CPU(base_clock=1000, max_multiplier=3500)
 # 別スレッドでCPUのrunメソッドを実行
 thread = threading.Thread(target=cpu.run)
 thread.start()
+
+import pyopencl as cl
+import numpy as np
+
+# Create a context and command queue
+ctx = cl.create_some_context()
+queue = cl.CommandQueue(ctx)
+
+# Define a simple kernel
+kernel = """
+__kernel void add(__global const int* a, __global const int* b, __global int* result) {
+  int i = get_global_id(0);
+  result[i] = a[i] + b[i];
+}
+"""
+
+# Create a program and kernel
+program = cl.Program(ctx, kernel).build()
+kernel = program.add
+
+# Create input data
+a = np.random.randint(0, 100, size=1000).astype(np.int32)
+b = np.random.randint(0, 100, size=1000).astype(np.int32)
+result = np.empty_like(a)
+
+# Create buffers
+a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=a)
+b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=b)
+result_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, result.nbytes)
+
+# Set up the kernel arguments
+kernel.set_args(a_buf, b_buf, result_buf)
+
+# Execute the kernel
+global_size = (a.size,)
+cl.enqueue_nd_range_kernel(queue, kernel, global_size, None)
+
+# Read the result
+cl.enqueue_copy(queue, result, result_buf)
+
+# Ensure all commands are finished
+queue.finish()
+
+print(result)
+
+import numpy as np
+
+def convert_rgb_bit_depth(r, g, b, original_depth=8, target_depth=48):
+    """
+    RGB値のビット深度を変更する関数
+    r, g, b: 入力のRGB値（0〜1の範囲で表現されることを前提）
+    original_depth: 元のビット深度（デフォルトは8ビット）
+    target_depth: 変更後のビット深度（例：16ビットなど）
+    """
+    # 最大値を計算 (例えば8ビットなら255、16ビットなら65535)
+    original_max_value = (2 ** original_depth) - 1
+    target_max_value = (2 ** target_depth) - 1
+    
+    # RGB値を元のビット深度の最大値からスケーリング
+    r_scaled = int(r * target_max_value / original_max_value)
+    g_scaled = int(g * target_max_value / original_max_value)
+    b_scaled = int(b * target_max_value / original_max_value)
+    
+    return r_scaled, g_scaled, b_scaled
+
+# 8ビットRGB値を16ビットに変換する例
+r, g, b = 255, 128, 64  # 8ビットのRGB値（0〜255）
+r_16bit, g_16bit, b_16bit = convert_rgb_bit_depth(r, g, b, original_depth=8, target_depth=48)
+
+print(f"48ビットRGB値: R={r_16bit}, G={g_16bit}, B={b_16bit}")
 
 import cv2
 import numpy as np
@@ -740,3 +697,50 @@ if __name__ == "__main__":
     # 元のリニアデータを表示（変更されていないか確認）
     print("Original linear data (unchanged):")
     print(linear_data)
+    
+import numpy as np
+import time
+
+def calculate_inverse_phase(frequency, amplitude):
+    """
+    与えられた周波数と振幅に基づいて逆位相の振動数を計算します。
+    """
+    inverse_phase = np.sin(2 * np.pi * frequency + np.pi) * amplitude
+    return inverse_phase
+
+def apply_cooling(current_temperature, target_temperature, current_frequency):
+    """
+    逆位相の計算を行い、冷却効果を適用します。
+    """
+    inverse_phase_effect = calculate_inverse_phase(current_frequency, current_temperature)
+    new_temperature = current_temperature - inverse_phase_effect
+    return new_temperature
+
+def monitor_and_cool(initial_temperature, target_temperature, initial_frequency, idle_time):
+    """
+    システムのアイドル時間を検出し、冷却効果を適用します。
+    """
+    current_temperature = initial_temperature
+    current_frequency = initial_frequency
+
+    while current_temperature > target_temperature:
+        # アイソレートされたアイドル時間を待機
+        time.sleep(idle_time)
+
+        # 冷却効果を適用
+        current_temperature = apply_cooling(current_temperature, target_temperature, current_frequency)
+
+        # ここに温度のログやモニタリングコードを追加することができます
+        print(f"現在の温度: {current_temperature:.2f} °C")
+
+    return current_temperature
+
+# 初期温度、目標温度、初期周波数、アイドル時間の設定
+initial_temp = 60  # 初期温度（摂氏）
+target_temp = 30   # 目標温度（摂氏）
+initial_freq = 2.0  # 初期周波数（GHz）
+idle_time = 1  # アイソレートされたアイドル時間（秒）
+
+# システムの監視と冷却プロセスの実行
+final_temp = monitor_and_cool(initial_temp, target_temp, initial_freq, idle_time)
+print(f"最終的な温度: {final_temp:.2f} °C")
