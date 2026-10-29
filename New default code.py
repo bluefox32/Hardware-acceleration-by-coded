@@ -274,11 +274,21 @@ def create_scramble_script(process_name):
 create_scramble_script(detected_abnormal_code)
 
 import numpy as np
-from scipy.fftpack import fft, ifft
+# 修正(2026-10-29): scipy が未導入の環境でも後段まで進めるよう import をガード（このセクションは関数定義のみ）
+try:
+    from scipy.fftpack import fft, ifft
+except ImportError:
+    fft = ifft = None
+    print("scipy が未導入のため FFT 圧縮セクションの import をスキップ")
 import time
 
 def compress_data(signal, threshold=0.01):
     """データをフーリエ変換して圧縮する"""
+    # 修正(2026-10-29): 時間軸 t がこのファイル内で未定義のため、定義されていない場合は
+    # NameError で落とさずスキップする（t が定義されている環境では従来通り動作する）
+    if 't' not in globals():
+        print("時間軸 t が未定義のため FFT 圧縮をスキップ")
+        return None
     signal_fft = fft(signal)
     half_size = len(signal) // 2
     signal_fft_half = signal_fft[:half_size]
@@ -356,7 +366,12 @@ def correct_errors(extended_data, error_row, error_col):
     return extended_data
     
 import numpy as np
-import matplotlib.pyplot as plt
+# 修正(2026-10-29): matplotlib が未導入の環境でも後段まで進めるよう import をガード
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
+    print("matplotlib が未導入のため RGB プロットセクションの import をスキップ")
 
 # キャッシュ用のリストを準備
 rgb_cache = []
@@ -415,7 +430,11 @@ def plot_unit_circle_with_rgb(sample_density=100):
     plt.show()
 
 # メインの実行
-plot_unit_circle_with_rgb()
+# 修正(2026-10-29): matplotlib が無い場合はプロットだけをスキップ
+if plt is not None:
+    plot_unit_circle_with_rgb()
+else:
+    print("matplotlib が未導入のため RGB プロットをスキップ")
 
 def get_rgb_from_cache(r, g, b):
     """
@@ -425,45 +444,50 @@ def get_rgb_from_cache(r, g, b):
     if (r, g, b) in rgb_cache:
         return (r, g, b)  # キャッシュから同じRGB値を返す
          
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
+# 修正(2026-10-29): cv2 が未導入の環境では動画処理セクション全体をスキップする。
+# また、補助関数 (split_into_blocks 等) が未定義の場合も NameError で落とさずスキップする
+try:
+    import cv2
+    import numpy as np
+    import matplotlib.pyplot as plt
 
-# 動画からフレームを取得し、画像処理を行う
-def process_video(video_path, block_size):
-    cap = cv2.VideoCapture(video_path)
-    all_vectors = []
+    # 動画からフレームを取得し、画像処理を行う
+    def process_video(video_path, block_size):
+        cap = cv2.VideoCapture(video_path)
+        all_vectors = []
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
         
-        # グレースケールに変換
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # グレースケールに変換
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        # 画像データをブロックに分割
-        blocks = split_into_blocks(gray_frame, block_size)
+            # 画像データをブロックに分割
+            blocks = split_into_blocks(gray_frame, block_size)
         
-        # ブロックの総和と平均を計算してベクトル化
-        vectors = compute_block_vectors(blocks)
-        all_vectors.append(vectors)
+            # ブロックの総和と平均を計算してベクトル化
+            vectors = compute_block_vectors(blocks)
+            all_vectors.append(vectors)
     
-    cap.release()
+        cap.release()
     
-    # 結果を可視化（例: 最後のフレームのベクトルを表示）
-    if all_vectors:
-        plot_vectors(all_vectors[-1])
+        # 結果を可視化（例: 最後のフレームのベクトルを表示）
+        if all_vectors:
+            plot_vectors(all_vectors[-1])
 
-if __name__ == "__main__":
-    # 動画ファイルのパス
-    video_path = 'sample_video.mp4'
+    if __name__ == "__main__":
+        # 動画ファイルのパス
+        video_path = 'sample_video.mp4'
     
-    # ブロックサイズ（8x8など）を指定
-    block_size = 8
+        # ブロックサイズ（8x8など）を指定
+        block_size = 8
     
-    # 動画を処理
-    process_video(video_path, block_size)
+        # 動画を処理
+        process_video(video_path, block_size)
+except (ImportError, NameError) as e:
+    print(f"cv2 が利用できない、または補助関数が未定義のため動画処理セクションをスキップ: {e}")
 
 import time
 import random
@@ -476,6 +500,7 @@ class CPU:
         self.current_multiplier = 1
         self.current_clock = self.base_clock * self.current_multiplier
         self.load = 0
+        self._stop_event = threading.Event()  # 修正(2026-10-29): 無限ループを外部から止められるようにする
 
     def adjust_clock(self):
         # シミュレートされた負荷に基づいてクロック速度を調整
@@ -495,62 +520,72 @@ class CPU:
         print(f"Simulated load: {self.load}%")
 
     def run(self):
-        while True:
+        # 修正(2026-10-29): while True のままだとプロセスが終了できないため、停止イベントを見るループにする
+        while not self._stop_event.is_set():
             self.simulate_load()
             self.adjust_clock()
             print(f"Current clock speed: {self.current_clock} MHz")
             time.sleep(1)  # 1秒待つ
 
+    def stop(self):
+        # 修正(2026-10-29): エミュレーションスレッドを終了させるためのメソッドを追加
+        self._stop_event.set()
+
 # ベースクロックが1000 MHz、最大マルチプライヤーが350のCPUをシミュレート
 cpu = CPU(base_clock=1000, max_multiplier=3500)
 
 # 別スレッドでCPUのrunメソッドを実行
-thread = threading.Thread(target=cpu.run)
+# 修正(2026-10-29): daemon スレッドにし、メインの終了でプロセスが残らないようにする（停止はファイル末尾で実施）
+thread = threading.Thread(target=cpu.run, daemon=True)
 thread.start()
 
-import pyopencl as cl
-import numpy as np
+# 修正(2026-10-29): pyopencl が未導入、または OpenCL デバイスが無い環境では OpenCL セクション全体をスキップする
+try:
+    import pyopencl as cl
+    import numpy as np
 
-# Create a context and command queue
-ctx = cl.create_some_context()
-queue = cl.CommandQueue(ctx)
+    # Create a context and command queue
+    ctx = cl.create_some_context()
+    queue = cl.CommandQueue(ctx)
 
-# Define a simple kernel
-kernel = """
-__kernel void add(__global const int* a, __global const int* b, __global int* result) {
-  int i = get_global_id(0);
-  result[i] = a[i] + b[i];
-}
-"""
+    # Define a simple kernel
+    kernel = """
+    __kernel void add(__global const int* a, __global const int* b, __global int* result) {
+      int i = get_global_id(0);
+      result[i] = a[i] + b[i];
+    }
+    """
 
-# Create a program and kernel
-program = cl.Program(ctx, kernel).build()
-kernel = program.add
+    # Create a program and kernel
+    program = cl.Program(ctx, kernel).build()
+    kernel = program.add
 
-# Create input data
-a = np.random.randint(0, 100, size=1000).astype(np.int32)
-b = np.random.randint(0, 100, size=1000).astype(np.int32)
-result = np.empty_like(a)
+    # Create input data
+    a = np.random.randint(0, 100, size=1000).astype(np.int32)
+    b = np.random.randint(0, 100, size=1000).astype(np.int32)
+    result = np.empty_like(a)
 
-# Create buffers
-a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=a)
-b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=b)
-result_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, result.nbytes)
+    # Create buffers
+    a_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=a)
+    b_buf = cl.Buffer(ctx, cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR, hostbuf=b)
+    result_buf = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, result.nbytes)
 
-# Set up the kernel arguments
-kernel.set_args(a_buf, b_buf, result_buf)
+    # Set up the kernel arguments
+    kernel.set_args(a_buf, b_buf, result_buf)
 
-# Execute the kernel
-global_size = (a.size,)
-cl.enqueue_nd_range_kernel(queue, kernel, global_size, None)
+    # Execute the kernel
+    global_size = (a.size,)
+    cl.enqueue_nd_range_kernel(queue, kernel, global_size, None)
 
-# Read the result
-cl.enqueue_copy(queue, result, result_buf)
+    # Read the result
+    cl.enqueue_copy(queue, result, result_buf)
 
-# Ensure all commands are finished
-queue.finish()
+    # Ensure all commands are finished
+    queue.finish()
 
-print(result)
+    print(result)
+except Exception as e:
+    print(f"pyopencl が利用できないため OpenCL セクションをスキップ: {e}")
 
 import numpy as np
 
@@ -578,12 +613,26 @@ r_16bit, g_16bit, b_16bit = convert_rgb_bit_depth(r, g, b, original_depth=8, tar
 
 print(f"48ビットRGB値: R={r_16bit}, G={g_16bit}, B={b_16bit}")
 
-import cv2
+# 修正(2026-10-29): cv2 / pandas は重心計算でのみ使うため、未導入でも後段の
+# DynamicSorobanEmulator の定義が消えないよう import だけをガードする
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+    print("cv2 が未導入のため重心計算セクションの import をスキップ")
 import numpy as np
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
+    print("pandas が未導入のため import をスキップ")
 
 def calculate_centroid(mask):
     """Calculate the centroid of the given binary mask."""
+    # 修正(2026-10-29): cv2 が未導入の場合は重心計算をスキップし、空マスク時と同じ (0, 0) を返す
+    if cv2 is None:
+        print("cv2 が未導入のため重心計算をスキップ")
+        return 0, 0
     moments = cv2.moments(mask)
     if moments["m00"] != 0:
         cx = int(moments["m10"] / moments["m00"])
@@ -679,16 +728,28 @@ class DynamicSorobanEmulator:
 
 import time
 
-def main_loop():
+def main_loop(max_iterations=None):
+    # 修正(2026-10-29): デモとして最後まで実行できるよう、任意でサイクル数の上限を付けられるようにした
     try:
+        iterations = 0
         while True:
             print("プログラムが実行中...")
+            iterations += 1
+            if max_iterations is not None and iterations >= max_iterations:
+                break
             time.sleep(1)
     except KeyboardInterrupt:
         print("プログラムが中断されました。クリーンアップ処理を行います。")
 
 if __name__ == "__main__":
-    main_loop()
+    # 修正(2026-10-29): 無限ループのままでは後段に進めないため、デモとして3サイクルだけ実行する
+    main_loop(max_iterations=3)
+
+    # 修正(2026-10-29): soroban / linear_data が未定義で NameError になっていたため、
+    # このセクションが意図していた DynamicSorobanEmulator のインスタンスとサンプルデータを用意する
+    soroban = DynamicSorobanEmulator()
+    linear_data = [10, -20, 30]
+    soroban.process_linear_data(linear_data)
 
     # ビーズ配置の再表示
     print("Beads configuration after operations:")
@@ -728,10 +789,17 @@ def monitor_and_cool(initial_temperature, target_temperature, initial_frequency,
         time.sleep(idle_time)
 
         # 冷却効果を適用
+        previous_temperature = current_temperature  # 修正(2026-10-29): 進展なし検出のため適用前の温度を保持
         current_temperature = apply_cooling(current_temperature, target_temperature, current_frequency)
 
         # ここに温度のログやモニタリングコードを追加することができます
         print(f"現在の温度: {current_temperature:.2f} °C")
+
+        # 修正(2026-10-29): 周波数が整数の場合、逆位相の効果は誤差レベル (~1e-14) しかなく
+        # 目標温度へ永遠に届かないため、進展が無視できる大きさなら監視を終了する
+        if abs(previous_temperature - current_temperature) < 1e-9:
+            print("冷却効果が確認できないため監視を終了します")
+            break
 
     return current_temperature
 
@@ -744,3 +812,7 @@ idle_time = 1  # アイソレートされたアイドル時間（秒）
 # システムの監視と冷却プロセスの実行
 final_temp = monitor_and_cool(initial_temp, target_temp, initial_freq, idle_time)
 print(f"最終的な温度: {final_temp:.2f} °C")
+
+# 修正(2026-10-29): CPU エミュレーションスレッドを停止してから終了する
+cpu.stop()
+thread.join(timeout=5)
